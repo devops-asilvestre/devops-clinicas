@@ -1,0 +1,26 @@
+{
+  "alerts": [
+    {
+      "name": "ProBonoMetaNaoAtingida",
+      "description": "Dispara alerta quando uma clínica não atinge 10 atendimentos pro-bono no mês.",
+      "metric": "ProBonoAtendimentos",
+      "namespace": "ClinicasApp",
+      "threshold": 10,
+      "comparison": "LessThanThreshold",
+      "period": 2592000,
+      "evaluationPeriods": 1,
+      "snsTopicArn": "arn:aws:sns:us-east-1:123456789012:ClinicasAlerts"
+    },
+    {
+      "name": "QuedaReceitaMensal",
+      "description": "Dispara alerta quando a receita mensal cai mais de 30% em relação ao mês anterior.",
+      "metric": "ReceitaMensal",
+      "namespace": "ClinicasApp",
+      "threshold": 0.7,
+      "comparison": "LessThanThreshold",
+      "period": 2592000,
+      "evaluationPeriods": 1,
+      "snsTopicArn": "arn:aws:sns:us-east-1:123456789012:ClinicasAlerts"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [ "ClinicasApp", "TotalAtendimentos", "clinicaId", "CLINICA-001" ],
+          [ "ClinicasApp", "TotalAtendimentos", "clinicaId", "CLINICA-002" ],
+          [ "ClinicasApp", "TotalAtendimentos", "clinicaId", "CLINICA-003" ]
+        ],
+        "title": "Atendimentos por Clínica",
+        "view": "timeSeries",
+        "region": "us-east-1",
+        "stat": "Sum",
+        "period": 86400
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [ "ClinicasApp", "ProBonoAtendimentos", "clinicaId", "CLINICA-001" ],
+          [ "ClinicasApp", "ProBonoAtendimentos", "clinicaId", "CLINICA-002" ],
+          [ "ClinicasApp", "ProBonoAtendimentos", "clinicaId", "CLINICA-003" ]
+        ],
+        "title": "Atendimentos Pro-Bono",
+        "view": "timeSeries",
+        "region": "us-east-1",
+        "stat": "Sum",
+        "period": 86400
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          [ "ClinicasApp", "ReceitaMensal", "clinicaId", "CLINICA-001" ],
+          [ "ClinicasApp", "ReceitaMensal", "clinicaId", "CLINICA-002" ],
+          [ "ClinicasApp", "ReceitaMensal", "clinicaId", "CLINICA-003" ]
+        ],
+        "title": "Receita Mensal por Clínica",
+        "view": "singleValue",
+        "region": "us-east-1",
+        "stat": "Sum",
+        "period": 2592000
+      }
+    }
+  ]
+}
