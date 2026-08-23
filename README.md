@@ -293,3 +293,7 @@ Esse pipeline mostra como o **evento de negócio (atendimento)** vira um **gatil
 - Exposto em dashboards para gestão estratégica.  
 
 ---
+
+## 📞 Informações de Contato
+- **Perfil Desenvolvedor**: [LinkedIn](https://www.linkedin.com/in/alessandro-silvestre-devops/)
+- **Email**: [devops.asilvestre@gmail.com](mailto:devops.asilvestre@gmail.com)
