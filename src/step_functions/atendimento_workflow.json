@@ -1,0 +1,21 @@
+{
+  "Comment": "Workflow de atendimento - Rede de Clínicas Odontológicas",
+  "StartAt": "ProcessarEvento",
+  "States": {
+    "ProcessarEvento": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:process_event",
+      "Next": "ValidarProBono"
+    },
+    "ValidarProBono": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:validar_probono",
+      "Next": "AtualizarRelatorio"
+    },
+    "AtualizarRelatorio": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:atualizar_relatorio",
+      "End": true
+    }
+  }
+}

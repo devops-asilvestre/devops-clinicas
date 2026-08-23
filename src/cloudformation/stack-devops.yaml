@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Infraestrutura DevOps para Rede de Clínicas Odontológicas
+
+Resources:
+
+  # SNS Topic para eventos de atendimento
+  ClinicasSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: ClinicasAtendimentosTopic
+
+  # DynamoDB para armazenar atendimentos em tempo real
+  AtendimentosTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Atendimentos
+      AttributeDefinitions:
+        - AttributeName: clinicaId
+          AttributeType: S
+        - AttributeName: atendimentoId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: clinicaId
+          KeyType: HASH
+        - AttributeName: atendimentoId
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
+  # RDS para relatórios mensais
+  ClinicasRDS:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: ClinicasRDS
+      Engine: mysql
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: 20
+      MasterUsername: admin
+      MasterUserPassword: !Ref RDSMasterPassword
+      PubliclyAccessible: false
+
+  # Lambda para processar eventos
+  ProcessEventLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: process_event
+      Handler: process_event.lambda_handler
+      Runtime: python3.9
+      Code:
+        S3Bucket: my-lambda-code-bucket
+        S3Key: process_event.zip
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: Atendimentos
+
+  # Lambda para validar pro-bono
+  ValidarProBonoLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: validar_probono
+      Handler: validar_probono.lambda_handler
+      Runtime: python3.9
+      Code:
+        S3Bucket: my-lambda-code-bucket
+        S3Key: validar_probono.zip
+      Environment:
+        Variables:
+          SNS_ALERT_TOPIC_ARN: !Ref ClinicasSNSTopic
+
+  # Lambda para atualizar relatórios
+  AtualizarRelatorioLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: atualizar_relatorio
+      Handler: atualizar_relatorio.lambda_handler
+      Runtime: python3.9
+      Code:
+        S3Bucket: my-lambda-code-bucket
+        S3Key: atualizar_relatorio.zip
+      Environment:
+        Variables:
+          RDS_HOST: !GetAtt ClinicasRDS.Endpoint.Address
+          RDS_USER: admin
+          RDS_PASSWORD: !Ref RDSMasterPassword
+          RDS_DATABASE: clinicasdb
+
+  # Step Functions Workflow
+  AtendimentoWorkflow:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: AtendimentoWorkflow
+      DefinitionString: !Sub |
+        {
+          "Comment": "Workflow de atendimento",
+          "StartAt": "ProcessarEvento",
+          "States": {
+            "ProcessarEvento": {
+              "Type": "Task",
+              "Resource": "${ProcessEventLambda.Arn}",
+              "Next": "ValidarProBono"
+            },
+            "ValidarProBono": {
+              "Type": "Task",
+              "Resource": "${ValidarProBonoLambda.Arn}",
+              "Next": "AtualizarRelatorio"
+            },
+            "AtualizarRelatorio": {
+              "Type": "Task",
+              "Resource": "${AtualizarRelatorioLambda.Arn}",
+              "End": true
+            }
+          }
+        }
+
+Parameters:
+  RDSMasterPassword:
+    Type: String
+    NoEcho: true
+    Description: Senha do usuário master do RDS

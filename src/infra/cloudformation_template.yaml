@@ -1,0 +1,129 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Infraestrutura DevOps completa para Rede de Clínicas Odontológicas
+
+Resources:
+
+  ## SNS Topic
+  ClinicasSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: ClinicasAtendimentosTopic
+
+  ## DynamoDB
+  ClinicasDynamoDB:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ClinicasAtendimentos
+      AttributeDefinitions:
+        - AttributeName: ClinicaId
+          AttributeType: S
+        - AttributeName: AtendimentoId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ClinicaId
+          KeyType: HASH
+        - AttributeName: AtendimentoId
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
+  ## RDS Instance
+  ClinicasRDS:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: ClinicasRelatorios
+      Engine: postgres
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: 20
+      MasterUsername: admin
+      MasterUserPassword: SuperSecret123
+      BackupRetentionPeriod: 7
+      PubliclyAccessible: false
+
+  ## Lambda para processar eventos
+  ProcessEventLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: ClinicasProcessEvent
+      Runtime: python3.9
+      Handler: process_event.lambda_handler
+      Role: arn:aws:iam::123456789012:role/LambdaExecutionRole
+      Code:
+        S3Bucket: clinicas-lambda-code
+        S3Key: process_event.zip
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: ClinicasAtendimentos
+          SNS_TOPIC: !Ref ClinicasSNSTopic
+
+  ## Lambda para validar pro-bono
+  ValidarProBonoLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: ClinicasValidarProBono
+      Runtime: python3.9
+      Handler: validar_probono.lambda_handler
+      Role: arn:aws:iam::123456789012:role/LambdaExecutionRole
+      Code:
+        S3Bucket: clinicas-lambda-code
+        S3Key: validar_probono.zip
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: ClinicasAtendimentos
+
+  ## Lambda para atualizar relatórios
+  AtualizarRelatorioLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: ClinicasAtualizarRelatorio
+      Runtime: python3.9
+      Handler: atualizar_relatorio.lambda_handler
+      Role: arn:aws:iam::123456789012:role/LambdaExecutionRole
+      Code:
+        S3Bucket: clinicas-lambda-code
+        S3Key: atualizar_relatorio.zip
+      Environment:
+        Variables:
+          RDS_ENDPOINT: !GetAtt ClinicasRDS.Endpoint.Address
+
+  ## Step Functions para orquestração
+  ClinicasStepFunction:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: ClinicasWorkflow
+      RoleArn: arn:aws:iam::123456789012:role/StepFunctionsExecutionRole
+      DefinitionString: !Sub |
+        {
+          "Comment": "Fluxo de atendimento clínico",
+          "StartAt": "ProcessarEvento",
+          "States": {
+            "ProcessarEvento": {
+              "Type": "Task",
+              "Resource": "${ProcessEventLambda.Arn}",
+              "Next": "ValidarProBono"
+            },
+            "ValidarProBono": {
+              "Type": "Task",
+              "Resource": "${ValidarProBonoLambda.Arn}",
+              "Next": "AtualizarRelatorio"
+            },
+            "AtualizarRelatorio": {
+              "Type": "Task",
+              "Resource": "${AtualizarRelatorioLambda.Arn}",
+              "End": true
+            }
+          }
+        }
+
+Outputs:
+  SNSTopicArn:
+    Description: ARN do tópico SNS
+    Value: !Ref ClinicasSNSTopic
+  DynamoDBTableName:
+    Description: Nome da tabela DynamoDB
+    Value: !Ref ClinicasDynamoDB
+  RDSInstance:
+    Description: Instância RDS
+    Value: !Ref ClinicasRDS
+  StepFunctionName:
+    Description: Nome da Step Function
+    Value: !Ref ClinicasStepFunction
